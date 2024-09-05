@@ -3,8 +3,11 @@
 
 #include <BLEDevice.h>
 #include "datatypes.h"
-#include "buffer.h"
 #include "utils.h"
+
+extern "C" {
+    #include "buffer.h"
+}
 
 BLEScan* pBLEScan;
 BLEScanResults found;
@@ -209,6 +212,10 @@ void bluetooth_init() {
     pBLEScan->setInterval(1349);
     pBLEScan->setWindow(449);
     pBLEScan->start(1);
+
+    found = pBLEScan->getResults();
+    
+    printf("Found devices:\n");
 
     for (int i=0; i<found.getCount(); i++) {
         printf("%s\n", found.getDevice(i).toString().c_str());
