@@ -18,6 +18,7 @@ BLERemoteCharacteristic* pChar_BMS_TX;
 const std::string BMS_SERVICE = "0000ff00-0000-1000-8000-00805f9b34fb";
 const std::string BMS_RX_CHAR = "0000ff02-0000-1000-8000-00805f9b34fb";
 const std::string BMS_TX_CHAR = "0000ff01-0000-1000-8000-00805f9b34fb";
+bms_values_jbd bms_data;
 #endif
 
 bool client_connected = false;
@@ -62,7 +63,7 @@ void jbd_process_pack_info(uint8_t *data, uint32_t dataSize, bms_values_jbd *bms
     bms->cell_num = data[index++];
 
     bms->temp_num = data[index++];
-    index += 4; // Pominięcie zbędnych danych
+    index += 4; // Skip unwanted values
     bms->temp1 = (2731 + buffer_get_uint16(data, &index)) / 100.0;
     bms->temp2 = (2731 + buffer_get_uint16(data, &index)) / 100.0;
 }
@@ -142,9 +143,9 @@ bool jbd_packet_process(uint8_t byte) {
                 if (crc == receivedCrc) {
                     int command = packetBuffer[1];
                     if (command == COMMAND_INFO) {
-                        jbd_process_pack_info(packetBuffer, currentPos);
+                        jbd_process_pack_info(packetBuffer, currentPos, &bms_data);
                     } else if (command == COMMAND_CELL) {
-                        jbd_process_cell_info(packetBuffer, currentPos);
+                        jbd_process_cell_info(packetBuffer, currentPos, &bms_data);
                     }
                 } else {
                     printf("CRC invalid! Calculated: %02X, Received: %02X\n", crc, receivedCrc);
@@ -166,25 +167,20 @@ class ClientCallbacks : public BLEClientCallbacks {
     }
 };
 
-void notifyCallbackJBD(BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
+void notifyCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
     for (int i = 0; i < length; ++i) {
+        #ifdef JBD_BMS
         jbd_packet_process(pData[i]);
+        #endif
     }
 }
 
 bool connectJBD(BLEAddress device) {
-    // BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
-    // BLEDevice::setSecurityCallbacks(new MySecurity());
-
-    // auto pSecurity = new BLESecurity();
-    // pSecurity->setAuthenticationMode(ESP_LE_AUTH_NO_BOND);
-    // pSecurity->setCapability(ESP_IO_CAP_NONE);
-    // pSecurity->setRespEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
-
     if (client_connected) {
         pClientBMS->disconnect();
         client_connected = false;
-        return false;
+        vTaskDelay(1000);
+        //return false;
     }    
 
     pClientBMS = BLEDevice::createClient();
@@ -199,7 +195,7 @@ bool connectJBD(BLEAddress device) {
         return false;
     }
 
-    pChar_BMS_TX->registerForNotify(notifyCallbackJBD);
+    pChar_BMS_TX->registerForNotify(notifyCallback);
     client_connected = true;
     return true;
 }
