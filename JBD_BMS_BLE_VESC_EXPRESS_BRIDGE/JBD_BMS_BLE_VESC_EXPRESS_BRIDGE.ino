@@ -59,7 +59,7 @@ std::string bmsBLEMacAddressesFilter[2]={"A5:C2:37:06:C7:36","A5:C2:37:18:C9:E1"
 
 
 // REPLACE WITH YOUR VESC Express MAC Address, found by running the companion Lisp script.
-uint8_t expressAddress[] = { 0xC0, 0x4E, 0x30, 0x80, 0xC4, 0xC9 };
+uint8_t expressAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }; // <This is the ESP-NOW broadcast address
 
 esp_now_peer_info_t peerInfo;
 
