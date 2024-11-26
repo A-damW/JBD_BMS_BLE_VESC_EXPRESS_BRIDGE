@@ -6,13 +6,12 @@
 
 (print (get-mac-addr))
 (print (wifi-get-chan))
-;(set-bms-val 'bms-cell-num 26)
 (def cell-index 0)
 (def current-cell 0)
 
 (esp-now-start)
 
-(def cell-total-count 26)
+(def cell-total-count 13)
 (set-bms-val 'bms-cell-num cell-total-count)
 ;(print "HI")
 
@@ -23,14 +22,10 @@
 (defun proc-data (src des data)
 ;        (print (list data))
     (progn
-;         (print (list data))
-         (if (<= cell-index cell-total-count) (def current-cell data)) 
-;         (print "HI")
-         (print (list current-cell))
-         (set-bms-val 'bms-v-cell cell-index (str-to-f current-cell))
-         (def cell-index (+ cell-index 1))
-         (if (>= cell-index cell-total-count) (def cell-index 0))
-;         (send-bms-can)
+         (def cell-index (ix (str-split data ":") 0))
+         (def current-cell (ix (str-split data ":") 1))
+         (print cell-index current-cell)
+         (set-bms-val 'bms-v-cell (str-to-i cell-index) (str-to-f current-cell)) ;works
 
     );progn    
 );proc-data
@@ -51,4 +46,3 @@
 
 ; Enable the custom app data event
 (event-enable 'event-esp-now-rx)
-
