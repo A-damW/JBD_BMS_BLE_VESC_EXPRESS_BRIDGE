@@ -434,13 +434,14 @@ void loop() {
               commSerial.printf("   %.3f\n", (float)packCellInfo.CellVolt[i - 1] / 1000);
 
 
+              // This one sends just the the cell voltage: 3.700
+              //char data[6];
+              //snprintf(data, sizeof(data), "%.3f", (float)packCellInfo.CellVolt[i - 1] / 1000);
 
-              char data[6];
-              // snprintf(data, sizeof(data), "Hello, World! #%lu", msg_count++);
-              snprintf(data, sizeof(data), "%.3f", (float)packCellInfo.CellVolt[i - 1] / 1000);
-              // if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
-              // Serial.println("Failed to broadcast message");
-              // }
+              
+              // This one sends the the cell number and cell voltage: 1:3.700, 2:3.703 2:3.699, etc.
+              char data[9];
+              snprintf(data, sizeof(data), "%i:%.3f", i-1, (float)packCellInfo.CellVolt[i - 1] / 1000);
 
 
 
