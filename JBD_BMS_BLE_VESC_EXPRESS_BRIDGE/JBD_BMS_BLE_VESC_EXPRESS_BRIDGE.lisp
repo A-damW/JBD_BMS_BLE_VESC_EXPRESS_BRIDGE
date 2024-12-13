@@ -4,6 +4,11 @@
 ;Created: on September 4 2024
 ;Author: A-damW, https://github.com/A-damW
 
+; ----------------- Begin user config -----------------
+; Set the total count of cells in your pack
+(def cell-total-count 39)
+; ----------------- End user config -----------------
+
 (print (get-mac-addr))
 (print (wifi-get-chan))
 (def cell-index 0)
@@ -11,7 +16,6 @@
 
 (esp-now-start)
 
-(def cell-total-count 13)
 (set-bms-val 'bms-cell-num cell-total-count)
 ;(print "HI")
 
@@ -22,10 +26,12 @@
 (defun proc-data (src des data)
 ;        (print (list data))
     (progn
+
          (def cell-index (ix (str-split data ":") 0))
          (def current-cell (ix (str-split data ":") 1))
          (print cell-index current-cell)
-         (set-bms-val 'bms-v-cell (str-to-i cell-index) (str-to-f current-cell)) ;works
+         (set-bms-val 'bms-v-cell (str-to-i cell-index) (str-to-f current-cell))
+         ;(send-bms-can)
 
     );progn    
 );proc-data
