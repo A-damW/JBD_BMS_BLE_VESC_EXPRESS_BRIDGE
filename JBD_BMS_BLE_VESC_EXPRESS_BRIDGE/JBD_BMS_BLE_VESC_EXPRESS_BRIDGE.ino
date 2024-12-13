@@ -1,27 +1,46 @@
 
-/** JBD_BMS_BLE_VESC_EXPRESS_BRIDGE:
+/* JBD_BMS_BLE_VESC_EXPRESS_BRIDGE:
  *
  *  An ESP32 firmware and companion LispBM script
-*   to connect multiple JBD BLE BMSs to VESC-EXPRESS via ESPNOW
+ *  to connect multiple JBD BLE BMSs to VESC-EXPRESS via ESPNOW
  *
  *  Created: on September 4 2024
- *      Author: A-damW, https://github.com/A-damW
+ *  Author: A-damW, https://github.com/A-damW
  *
 */
 
-//----------------------------------------
 #include <NimBLEDevice.h>
+#include <esp_now.h>
+#include <WiFi.h>
+#include "mydatatypes.h"
+
+// ----------------- Begin user config -----------------
+// List of JBD BMS BLE addresses, this list is exclusive.
+// Uncomment the empty list: bmsBLEMacAddressesFilter[]={}; to allow any bms MAC addresses (Max 3 bms connections default)
+// change to 9 connections here: /home/USERNAME/Arduino/libraries/NimBLE-Arduino/src/nimconfig.h
+//std::string bmsBLEMacAddressesFilter[] = { "a5:c2:37:06:c7:36", "a5:c2:37:18:d3:fb", "a5:c2:37:18:c9:e1" }; //works
+//std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:18:c9:e1","a5:c2:37:06:c7:36"}; //works
+//std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:06:c7:36"}; //works
+std::string bmsBLEMacAddressesFilter[] = {}; //works, will connect to ANY JBD BMS in ble range
+
+
+// Enter your VESC Express MAC Address, found by running the companion Lisp script.
+// Example:
+// uint8_t expressAddress[] = { 0xC0, 0x4E, 0x30, 0x80, 0xC4, 0xC9 };
+// This is the ESP-NOW broadcast address
+uint8_t expressAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+// ----------------- End user config -----------------
+
+
+// ----------------- Begin Declarations -----------------
 
 static NimBLEAdvertisedDevice* advDevice;
 
 static bool doConnect = false;
 static uint32_t scanTime = 15; /** 0 = scan forever */
 
-#include <esp_now.h>
-#include <WiFi.h>
-
 #define TRACE
-#include "mydatatypes.h"
 
 #define commSerial Serial
 
@@ -29,43 +48,28 @@ packBasicInfoStruct packBasicInfo;  //structures for BMS data
 packEepromStruct packEeprom;        //structures for BMS data
 packCellInfoStruct packCellInfo;    //structures for BMS data
 
-const byte cBasicInfo3 = 3;         //type of packet 3= basic info
-const byte cCellInfo4 = 4;          //type of packet 4= individual cell info
-
-static BLEUUID serviceUUID("0000ff00-0000-1000-8000-00805f9b34fb");  //xiaoxiang bms original module
-static BLEUUID charUUID_rx("0000ff01-0000-1000-8000-00805f9b34fb");  //xiaoxiang bms original module
-static BLEUUID charUUID_tx("0000ff02-0000-1000-8000-00805f9b34fb");  //xiaoxiang bms original module
+const byte cBasicInfo3 = 3;  //type of packet 3= basic info
+const byte cCellInfo4 = 4;   //type of packet 4= individual cell info
 
 // Notifications from this characteristic is received data from BMS
 // 0000ff01-0000-1000-8000-00805f9b34fb
 // NOTIFY, READ
-
 // Write to this characteristic (charUUID_tx) to send data to BMS.
 // The data will be returned on the charUUID_rx characteristic.
 // 0000ff02-0000-1000-8000-00805f9b34fb
 // READ, WRITE, WRITE NO RESPONSE
-
+static BLEUUID serviceUUID("0000ff00-0000-1000-8000-00805f9b34fb");  //xiaoxiang/JBD bms original module
+static BLEUUID charUUID_rx("0000ff01-0000-1000-8000-00805f9b34fb");  //xiaoxiang/JBD bms original module
+static BLEUUID charUUID_tx("0000ff02-0000-1000-8000-00805f9b34fb");  //xiaoxiang/JBD bms original module
 
 bool newPacketReceived = false;
 
-// List of BMS BLE addresses, this list is exclusive.
-// Uncomment the empty list: bmsBLEMacAddressesFilter[0]={} to allow all MACs(Max 3 connections default)-
-// with serviceUUID("0000ff00-0000-1000-8000-00805f9b34fb")
-// Remember to set the count [3] to match the number of MACs.
-std::string bmsBLEMacAddressesFilter[2]={"A5:C2:37:06:C7:36","A5:C2:37:18:C9:E1"};
-//std::string bmsBLEMacAddressesFilter[3]={"A5:C2:37:06:C7:36","A5:C2:37:18:C9:E1","A5:C2:37:06:C7:36"};
-// std::string bmsBLEMacAddressesFilter[1]={"A5:C2:37:06:C7:36"};
-// std::string bmsBLEMacAddressesFilter[0]={};
-
-
-// REPLACE WITH YOUR VESC Express MAC Address, found by running the companion Lisp script.
-uint8_t expressAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }; // <This is the ESP-NOW broadcast address
-
 esp_now_peer_info_t peerInfo;
 
-//----------------------------------------
+// ----------------- End Declarations -----------------
 
-// callback when data is sent
+
+// callback when data is recieved from bms
 void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
   // Serial.print("\r\nLast Packet Send Status:\t");
   // Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
@@ -82,7 +86,6 @@ class ClientCallbacks : public NimBLEClientCallbacks {
          *  Min interval: 120 * 1.25ms = 150, Max interval: 120 * 1.25ms = 150, 0 latency, 60 * 10ms = 600ms timeout
          */
     // pClient->updateConnParams(120,120,0,60);
-
   };
 
   void onDisconnect(NimBLEClient* pClient) {
@@ -302,7 +305,9 @@ bool connectToServer() {
 
 
 
+
 void setup() {
+
   commSerial.begin(9600);
   commSerial.println("Starting NimBLE Client");
 
@@ -348,18 +353,17 @@ void setup() {
   pScan->setInterval(45);
   pScan->setWindow(15);
 
-// Populate MAC filter
-  for (byte i = 0; i <sizeof(bmsBLEMacAddressesFilter); ++i) {  
+  // Populate MAC filter
+  for (byte i = 0; i < sizeof(bmsBLEMacAddressesFilter); ++i) {
     NimBLEDevice::whiteListAdd(bmsBLEMacAddressesFilter[i]);
   }
 
-    /** Set setFilterPolicy to ONLY connect to BMS MAC addresses specified above
+  /** Set setFilterPolicy to ONLY connect to BMS MAC addresses specified above
      *  but will use more energy from both devices
      */
   if (sizeof(bmsBLEMacAddressesFilter) == 0) {
     pScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
-  }
-  else{
+  } else {
     pScan->setFilterPolicy(BLE_HCI_SCAN_FILT_USE_WL);
   }
   /** Active scan will gather scan response data from advertisers
@@ -374,9 +378,49 @@ void setup() {
 }
 
 
+
+
+//int find( const char * key )
+int find(std::string key) {
+  int index = -1;
+  for (uint8_t i = 0; i < sizeof(bmsBLEMacAddressesFilter) / sizeof(char*); i++)
+    //if ( strcmp( bmsBLEMacAddressesFilter[i].c_str(), key.c_str() ) )
+    //if(bmsBLEMacAddressesFilter[i].c_str() == key.c_str())
+    if (bmsBLEMacAddressesFilter[i].compare(key) == 0) {
+      // commSerial.print(key.c_str());
+      // commSerial.print(bmsBLEMacAddressesFilter[i].c_str());
+      // commSerial.print(sizeof( bmsBLEMacAddressesFilter ));
+      // commSerial.print(i);
+      // commSerial.print("true");
+      index = i;
+      break;
+    }
+
+  return index;
+}
+
+// // Helper fuction
+// int find(int arr[], int n, std::string key)
+// {
+//   int index = -1;
+
+//     for(int i=0; i<n; i++)
+//     {
+//       if(arr[i]==key)
+//       {
+//         index=i;
+//         break;
+//       }
+//     }
+//   return index;
+// }
+
+
 void loop() {
   /** Loop here until we find a device we want to connect to */
   while (!doConnect) {
+
+    int totalCellCount = 1;
 
 
     NimBLERemoteService* pSvc = nullptr;
@@ -391,7 +435,7 @@ void loop() {
           *  This saves considerable time and power.
           */
       // for (auto i = 0; i < NimBLEDevice::getClientListSize(); ++i) {
-      for (auto i = 0; i < NimBLEDevice::getWhiteListCount(); ++i) {  
+      for (auto i = 0; i < NimBLEDevice::getWhiteListCount(); ++i) {  //WORKS
         pClient = NimBLEDevice::getClientByPeerAddress(NimBLEDevice::getWhiteListAddress(i));
         if (!pClient || !pClient->isConnected()) {
           // commSerial.println("pClient is NULL or not connected");
@@ -424,26 +468,47 @@ void loop() {
 
 
 
-
-
-
-          delay(100);
+          delay(150);
           if (newPacketReceived == true) {
+
             for (byte i = 1; i <= packCellInfo.NumOfCells; i++) {
-              commSerial.print(pClient->getPeerAddress().toString().c_str());
-              commSerial.printf("   %.3f\n", (float)packCellInfo.CellVolt[i - 1] / 1000);
+              //int x = find(pClient->getPeerAddress().toString().c_str());
+              //commSerial.print(x);
+              //bmsCellCount[x] = packCellInfo.NumOfCells;
 
+              //int totalCellCount = 0;
 
-              // This one sends just the the cell voltage: 3.700
-              //char data[6];
-              //snprintf(data, sizeof(data), "%.3f", (float)packCellInfo.CellVolt[i - 1] / 1000);
-
+              // for (int element : bmsCellCount) {  // for each element in the array
+              //   totalCellCount += bmsCellCount[element];
+              // }
               
-              // This one sends the the cell number and cell voltage: 1:3.700, 2:3.703 2:3.699, etc.
+
+              //for (int i = 0; i < sizeof(bmsCellCount) / sizeof(bmsCellCount[0]); i++) {
+              //  totalCellCount = totalCellCount + bmsCellCount[i];
+              //}
+
+              //commSerial.print(totalCellCount);
+              
+
+              //commSerial.print(pClient->getPeerAddress().toString().c_str()); //works
+              //commSerial.printf("   %.3f\n", (float)packCellInfo.CellVolt[i - 1] / 1000); //works
+              //commSerial.printf("   %i:%.3f\n", i, (float)packCellInfo.CellVolt[i - 1] / 1000);  //works
+              //commSerial.printf("   %x %i:%.3f\n", x, i, (float)packCellInfo.CellVolt[i - 1] / 1000);  //works
+              commSerial.printf("   %i:%.3f\n", totalCellCount, (float)packCellInfo.CellVolt[i - 1] / 1000);  //works
+
+
+
+
+              //char data[6];
               char data[9];
-              snprintf(data, sizeof(data), "%i:%.3f", i-1, (float)packCellInfo.CellVolt[i - 1] / 1000);
+              // snprintf(data, sizeof(data), "Hello, World! #%lu", msg_count++);
+              //snprintf(data, sizeof(data), "%i:%.3f", i - 1, (float)packCellInfo.CellVolt[i - 1] / 1000);  //works
+              snprintf(data, sizeof(data), "%i:%.3f", totalCellCount - 1, (float)packCellInfo.CellVolt[i - 1] / 1000);
+              // if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
+              // Serial.println("Failed to broadcast message");
+              // }
 
-
+              totalCellCount++;
 
               esp_err_t result = esp_now_send(expressAddress, (uint8_t*)data, sizeof(data));
               delay(100);
@@ -462,9 +527,10 @@ void loop() {
 
 
     delay(1000);
+    
 
 
-  }  //while(!doConnect){
+  }  //END while(!doConnect){}
 
   doConnect = false;
 
