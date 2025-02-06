@@ -32,7 +32,7 @@
          (def current-cell (ix (str-split data ":") 1))
          (print cell-index current-cell)
          (set-bms-val 'bms-v-cell (str-to-i cell-index) (str-to-f current-cell))
-         ;(send-bms-can)
+         ;(send-bms-can) ;Un-comment to send bms data over can-bus
 
     );progn    
 );proc-data
