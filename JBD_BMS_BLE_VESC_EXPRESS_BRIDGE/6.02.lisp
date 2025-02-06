@@ -1,3 +1,4 @@
+
 ;JBD_BMS_BLE_VESC_BRIDGE:
 ;An ESP32 firmware and companion LispBM script
 ;to connect multiple JBD BLE BMSs to VESC-EXPRESS via ESPNOW
@@ -31,7 +32,7 @@
          (def current-cell (ix (str-split data ":") 1))
          (print cell-index current-cell)
          (set-bms-val 'bms-v-cell (str-to-i cell-index) (str-to-f current-cell))
-         ;(send-bms-can)
+         ;(send-bms-can) ;Un-comment to send bms data over can-bus
 
     );progn    
 );proc-data
@@ -41,7 +42,8 @@
         (progn
             (recv
                 ((event-esp-now-rx (? src) (? des) (? data)) (proc-data src des data))
-                );recv
+                (_ nil)
+            );recv
                 
         );progn
     );loopwhile t
