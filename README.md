@@ -8,8 +8,8 @@ An ESP32 firmware and companion LispBM script to connect multiple simultaneous J
 
 ## Features
 
-The xESC2 firmware is based off the current version of the VESC firmware. Therefore it is able to do everything you'd wish your brushless ESC had. Including: FOC, speed control, current limiting, ...
-
+- Connect to one or more JBD bms simultaneously and transmit cell data to vesc-express.
+- For example, you could have three 14s bms connected to a single 42s battery pack, and see all 42 cells in vesc-tool.
 
 ## Requied hardware
 
