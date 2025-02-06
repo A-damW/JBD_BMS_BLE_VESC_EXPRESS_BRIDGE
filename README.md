@@ -4,7 +4,9 @@ An ESP32 firmware and companion LispBM script to connect multiple simultaneous J
 ## TODO
 - [ ] Write a better readme. (Ongoing...)
 - :white_check_mark: Softcode the battery cell number, i.e. tally the total cell count on the esp32 bridge, and send over esp-now to lisp on vesc-express.
-- :white_check_mark: Add support for 6.02 and 6.05
+- :white_check_mark: Add support for 6.02 and 6.05. See https://github.com/A-damW/JBD_BMS_BLE_VESC_EXPRESS_BRIDGE/issues/6
+- [ ] Add support for cell/bms temperatures.
+- [ ] Add support for charge/discarge control.
 
 ## Features
 
