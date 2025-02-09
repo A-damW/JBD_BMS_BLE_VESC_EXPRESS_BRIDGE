@@ -7,7 +7,8 @@ An ESP32 firmware and companion LispBM script to connect multiple simultaneous J
 - :white_check_mark: Add support for 6.02 and 6.05. See: https://github.com/A-damW/JBD_BMS_BLE_VESC_EXPRESS_BRIDGE/issues/6
 - :white_check_mark: Add CHANGELOG.md See: https://github.com/A-damW/JBD_BMS_BLE_VESC_EXPRESS_BRIDGE/blob/main/CHANGELOG.md
 - [ ] Add support for cell/bms temperatures.
-- [ ] Add support for charge/discarge control.
+- [ ] Add support for charge/discharge control.
+- [ ] Add How-to section.
 
 ## Features
 
