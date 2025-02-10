@@ -41,7 +41,7 @@ An ESP32 firmware and companion LispBM script to connect multiple simultaneous J
      
    *  Navigate to 'LispBM Scripting', upload the Lisp script, you should see esp-now cellnum:voltage data from the ESP-BRIDGE in the Console/REPL.
 
-!(docs/img/esp-prog.jpg)
+![esp-prog](docs/img/esp-prog.jpg)
 
 
 ## TODO
