@@ -33,15 +33,15 @@ An ESP32 firmware and companion LispBM script to connect multiple simultaneous J
  
 * VESC-Tool: (6.02 or greater)
    * If you are starting with an un-flashed vesc-express(esp32-c3), open VESC-Tool, connect the esp32 via usb,
-     1. Navigate to 'ESP Programmer'.
-     2. Refresh the port.
-     3. Connect.
-     4. Select 'VESC Express'.
-     5. Press 'Flash using USB'.
+1) Navigate to 'ESP Programmer'.
+2) Refresh the port.
+3) Connect.
+4) Select 'VESC Express'.
+5) Press 'Flash using USB'.
      
+   ![esp-prog](docs/img/esp-prog.jpg)
+   
    *  Navigate to 'LispBM Scripting', upload the Lisp script, you should see esp-now cellnum:voltage data from the ESP-BRIDGE in the Console/REPL.
-
-![esp-prog](docs/img/esp-prog.jpg)
 
 
 ## TODO
