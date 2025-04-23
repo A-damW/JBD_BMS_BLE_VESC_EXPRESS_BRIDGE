@@ -19,9 +19,9 @@ An ESP32 firmware and companion LispBM script to connect multiple simultaneous J
 
 ## How To
 * Arduino environment:
-   * An installation of the Arduino IDE.
-   * The 'NimBLE-Arduino' bluetooth library installed in the Arduino IDE.
-   * 'esp32 by Espressif Systems' installed in Arduino boards manager.
+   * An installation of the Arduino IDE. (Tested working on ver. 2.3.2)
+   * The 'NimBLE-Arduino' bluetooth library installed in the Arduino IDE. (Tested working on ver. 1.4.2)
+   * 'esp32 by Espressif Systems' installed in Arduino boards manager. (Tested working on ver. 2.0.11)
    * Open the JBD_BMS_BLE_VESC_EXPRESS_BRIDGE.ino file, configure user config as desired, compile and upload to ESP-BRIDGE
    * If you have any live JBD bms in range, open the Arduino serial monitor, you should see connection messages and cellnum:voltage scrolling.
 
