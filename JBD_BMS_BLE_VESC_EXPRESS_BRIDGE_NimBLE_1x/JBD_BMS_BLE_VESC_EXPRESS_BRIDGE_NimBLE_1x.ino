@@ -16,9 +16,11 @@
 
 // ----------------- Begin user config -----------------
 
-#define DEBUG false // flag to turn Serial debugging on(true) or off(false)
+#define DEBUG true // flag to turn Serial debugging on(true) or off(false)
 //#define commSerial Serial
 #define commSerial if(DEBUG)Serial
+
+static uint32_t scanTime = 15; /** seconds, 0 = scan forever */
 
 // List of JBD BMS BLE addresses, this list is exclusive.
 // Uncomment the empty list: bmsBLEMacAddressesFilter[]={}; to allow any bms MAC addresses (Max 3 bms connections default)
@@ -43,11 +45,10 @@ uint8_t expressAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static NimBLEAdvertisedDevice* advDevice;
 
 static bool doConnect = false;
-static uint32_t scanTime = 15; /** seconds, 0 = scan forever */
 
 #define TRACE
 
-#define commSerial Serial
+//#define commSerial Serial
 
 packBasicInfoStruct packBasicInfo;  //structures for BMS data
 packEepromStruct packEeprom;        //structures for BMS data
@@ -343,8 +344,6 @@ void setup() {
 
   /** Optional: set the transmit power, default is 3db */
   // #ifdef ESP_PLATFORM
-  //     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
-  // #else
   //     NimBLEDevice::setPower(9); /** +9db */
   // #endif
 
@@ -367,6 +366,7 @@ void setup() {
   size_t sizeWL = sizeof(bmsBLEMacAddressesFilter) / sizeof(bmsBLEMacAddressesFilter[0]);
   for (auto i = 0; i < sizeWL; ++i) {
     NimBLEDevice::whiteListAdd(NimBLEAddress(bmsBLEMacAddressesFilter[i],0));
+    commSerial.print("Added to WL: ");
     commSerial.println(bmsBLEMacAddressesFilter[i].c_str());
     delay(50);
   }
@@ -387,6 +387,7 @@ void setup() {
   /** Start scanning for advertisers for the scan time specified (in seconds) 0 = forever
      *  Optional callback for when scanning stops.
      */
+  commSerial.println("Starting scan...");
   pScan->start(scanTime, scanEndedCB);
   // NimBLEDevice::whiteListAdd(advertisedDevice->getAddress());
 }
