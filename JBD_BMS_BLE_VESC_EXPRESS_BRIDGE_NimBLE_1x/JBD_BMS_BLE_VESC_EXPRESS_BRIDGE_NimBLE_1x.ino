@@ -15,13 +15,20 @@
 #include "mydatatypes.h"
 
 // ----------------- Begin user config -----------------
+
+#define DEBUG true // flag to turn Serial debugging on(true) or off(false)
+//#define commSerial Serial
+#define commSerial if(DEBUG)Serial
+
+static uint32_t scanTime = 15; /** seconds, 0 = scan forever */
+
 // List of JBD BMS BLE addresses, this list is exclusive.
 // Uncomment the empty list: bmsBLEMacAddressesFilter[]={}; to allow any bms MAC addresses (Max 3 bms connections default)
 // change to 9 connections here: /home/USERNAME/Arduino/libraries/NimBLE-Arduino/src/nimconfig.h
 //std::string bmsBLEMacAddressesFilter[] = { "a5:c2:37:06:c7:36", "a5:c2:37:18:d3:fb", "a5:c2:37:18:c9:e1" }; //works
 //std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:18:c9:e1","a5:c2:37:06:c7:36"}; //works
-//std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:06:c7:36"}; //works
-std::string bmsBLEMacAddressesFilter[] = {}; //works, will connect to ANY JBD BMS in ble range
+std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:06:c7:36"}; //works
+//std::string bmsBLEMacAddressesFilter[] = {}; //works, will connect to ANY JBD BMS in ble range
 
 
 // Enter your VESC Express MAC Address, found by running the companion Lisp script.
@@ -38,11 +45,10 @@ uint8_t expressAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static NimBLEAdvertisedDevice* advDevice;
 
 static bool doConnect = false;
-static uint32_t scanTime = 15; /** 0 = scan forever */
 
 #define TRACE
 
-#define commSerial Serial
+//#define commSerial Serial
 
 packBasicInfoStruct packBasicInfo;  //structures for BMS data
 packEepromStruct packEeprom;        //structures for BMS data
@@ -338,8 +344,6 @@ void setup() {
 
   /** Optional: set the transmit power, default is 3db */
   // #ifdef ESP_PLATFORM
-  //     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
-  // #else
   //     NimBLEDevice::setPower(9); /** +9db */
   // #endif
 
@@ -353,15 +357,25 @@ void setup() {
   pScan->setInterval(45);
   pScan->setWindow(15);
 
-  // Populate MAC filter
-  for (byte i = 0; i < sizeof(bmsBLEMacAddressesFilter); ++i) {
-    NimBLEDevice::whiteListAdd(bmsBLEMacAddressesFilter[i]);
+  // // Populate MAC filter
+  // for (byte i = 0; i < sizeof(bmsBLEMacAddressesFilter); ++i) {
+  //   NimBLEDevice::whiteListAdd(bmsBLEMacAddressesFilter[i]);
+  // }
+    // Populate MAC filter
+  //int size = *(&bmsBLEMacAddressesFilter + 1) - bmsBLEMacAddressesFilter;
+  size_t sizeWL = sizeof(bmsBLEMacAddressesFilter) / sizeof(bmsBLEMacAddressesFilter[0]);
+  for (auto i = 0; i < sizeWL; ++i) {
+    NimBLEDevice::whiteListAdd(NimBLEAddress(bmsBLEMacAddressesFilter[i],0));
+    commSerial.print("Added to WL: ");
+    commSerial.println(bmsBLEMacAddressesFilter[i].c_str());
+    delay(50);
   }
 
   /** Set setFilterPolicy to ONLY connect to BMS MAC addresses specified above
      *  but will use more energy from both devices
      */
-  if (sizeof(bmsBLEMacAddressesFilter) == 0) {
+  //if (sizeof(bmsBLEMacAddressesFilter) == 0) {
+  if (sizeof(sizeWL) == 0) {
     pScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
   } else {
     pScan->setFilterPolicy(BLE_HCI_SCAN_FILT_USE_WL);
@@ -373,47 +387,12 @@ void setup() {
   /** Start scanning for advertisers for the scan time specified (in seconds) 0 = forever
      *  Optional callback for when scanning stops.
      */
+  commSerial.println("Starting scan...");
   pScan->start(scanTime, scanEndedCB);
   // NimBLEDevice::whiteListAdd(advertisedDevice->getAddress());
 }
 
 
-
-
-//int find( const char * key )
-int find(std::string key) {
-  int index = -1;
-  for (uint8_t i = 0; i < sizeof(bmsBLEMacAddressesFilter) / sizeof(char*); i++)
-    //if ( strcmp( bmsBLEMacAddressesFilter[i].c_str(), key.c_str() ) )
-    //if(bmsBLEMacAddressesFilter[i].c_str() == key.c_str())
-    if (bmsBLEMacAddressesFilter[i].compare(key) == 0) {
-      // commSerial.print(key.c_str());
-      // commSerial.print(bmsBLEMacAddressesFilter[i].c_str());
-      // commSerial.print(sizeof( bmsBLEMacAddressesFilter ));
-      // commSerial.print(i);
-      // commSerial.print("true");
-      index = i;
-      break;
-    }
-
-  return index;
-}
-
-// // Helper fuction
-// int find(int arr[], int n, std::string key)
-// {
-//   int index = -1;
-
-//     for(int i=0; i<n; i++)
-//     {
-//       if(arr[i]==key)
-//       {
-//         index=i;
-//         break;
-//       }
-//     }
-//   return index;
-// }
 
 
 void loop() {
