@@ -12,30 +12,35 @@
 #include <NimBLEDevice.h>
 #include <esp_now.h>
 #include <WiFi.h>
+//#include "esp_netif.h"
+#include "esp_wifi.h"
 #include "mydatatypes.h"
 
 // ----------------- Begin user config -----------------
 
 #define DEBUG true // flag to turn Serial debugging on(true) or off(false)
-//#define commSerial Serial
+#define commSerial Serial
 #define commSerial if(DEBUG)Serial
 
-static uint32_t scanTime = 15; /** seconds, 0 = scan forever */
+int EspNow_chan = 11;
+
+static uint32_t scanTime = 10; /** seconds, 0 = scan forever */
 
 // List of JBD BMS BLE addresses, this list is exclusive.
 // Uncomment the empty list: bmsBLEMacAddressesFilter[]={}; to allow any bms MAC addresses (Max 3 bms connections default)
 // change to 9 connections here: /home/USERNAME/Arduino/libraries/NimBLE-Arduino/src/nimconfig.h
-//std::string bmsBLEMacAddressesFilter[] = { "a5:c2:37:06:c7:36", "a5:c2:37:18:d3:fb", "a5:c2:37:18:c9:e1" }; //works
+std::string bmsBLEMacAddressesFilter[] = { "a5:c2:37:06:c7:36", "a5:c2:37:18:d3:fb", "a5:c2:37:18:c9:e1" }; //works
 //std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:18:c9:e1","a5:c2:37:06:c7:36"}; //works
-std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:06:c7:36"}; //works
+//std::string bmsBLEMacAddressesFilter[] = {"a5:c2:37:06:c7:36"}; //works
 //std::string bmsBLEMacAddressesFilter[] = {}; //works, will connect to ANY JBD BMS in ble range
 
 
 // Enter your VESC Express MAC Address, found by running the companion Lisp script.
 // Example:
-// uint8_t expressAddress[] = { 0xC0, 0x4E, 0x30, 0x80, 0xC4, 0xC9 };
-// This is the ESP-NOW broadcast address
-uint8_t expressAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+// This is the ESP-NOW broadcast address, both decimal and hex notation work.
+//uint8_t expressAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t expressAddress[] = { 255, 255, 255, 255, 255, 255 };
+
 
 // ----------------- End user config -----------------
 
@@ -327,10 +332,19 @@ void setup() {
   // get the status of Transmitted packet
   esp_now_register_send_cb(OnDataSent);
 
+  //WiFi.disconnect();
+  // int chan=11;
+  ESP_ERROR_CHECK(esp_wifi_set_channel(EspNow_chan,WIFI_SECOND_CHAN_NONE));
+  // ESP_ERR_ESPNOW_CHAN(esp_wifi_set_channel(chan,WIFI_SECOND_CHAN_NONE));
+  // if (esp_now_init() != ESP_OK) { ESP.restart(); return; }
+  peerInfo.channel = EspNow_chan;
+
+  //if (esp_now_init() != ESP_OK) { ESP.restart(); return; }
+  //peerInfo.channel = 11;
+  peerInfo.encrypt = false;
+
   // Register ESPNow peer
   memcpy(peerInfo.peer_addr, expressAddress, 6);
-  peerInfo.channel = 1;
-  peerInfo.encrypt = false;
 
   // Add ESPNow peer
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
@@ -357,25 +371,25 @@ void setup() {
   pScan->setInterval(45);
   pScan->setWindow(15);
 
-  // // Populate MAC filter
-  // for (byte i = 0; i < sizeof(bmsBLEMacAddressesFilter); ++i) {
-  //   NimBLEDevice::whiteListAdd(bmsBLEMacAddressesFilter[i]);
-  // }
-    // Populate MAC filter
-  //int size = *(&bmsBLEMacAddressesFilter + 1) - bmsBLEMacAddressesFilter;
-  size_t sizeWL = sizeof(bmsBLEMacAddressesFilter) / sizeof(bmsBLEMacAddressesFilter[0]);
-  for (auto i = 0; i < sizeWL; ++i) {
-    NimBLEDevice::whiteListAdd(NimBLEAddress(bmsBLEMacAddressesFilter[i],0));
-    commSerial.print("Added to WL: ");
-    commSerial.println(bmsBLEMacAddressesFilter[i].c_str());
-    delay(50);
+  // Populate MAC filter
+  for (byte i = 0; i < sizeof(bmsBLEMacAddressesFilter); ++i) {
+    NimBLEDevice::whiteListAdd(bmsBLEMacAddressesFilter[i]);
   }
+    // Populate MAC filter
+  // //int size = *(&bmsBLEMacAddressesFilter + 1) - bmsBLEMacAddressesFilter;
+   size_t sizeWL = sizeof(bmsBLEMacAddressesFilter) / sizeof(bmsBLEMacAddressesFilter[0]);
+  // for (auto i = 0; i < sizeWL; ++i) {
+  //   NimBLEDevice::whiteListAdd(NimBLEAddress(bmsBLEMacAddressesFilter[i],0));
+  //   commSerial.print("Added to WL: ");
+  //   commSerial.println(bmsBLEMacAddressesFilter[i].c_str());
+  //   delay(50);
+  // }
 
   /** Set setFilterPolicy to ONLY connect to BMS MAC addresses specified above
      *  but will use more energy from both devices
      */
-  //if (sizeof(bmsBLEMacAddressesFilter) == 0) {
-  if (sizeof(sizeWL) == 0) {
+  if (sizeof(bmsBLEMacAddressesFilter) == 0) {
+  //if (sizeof(sizeWL) == 0) {
     pScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
   } else {
     pScan->setFilterPolicy(BLE_HCI_SCAN_FILT_USE_WL);
@@ -490,7 +504,8 @@ void loop() {
               totalCellCount++;
 
               esp_err_t result = esp_now_send(expressAddress, (uint8_t*)data, sizeof(data));
-              delay(100);
+              delay(100); //works
+              //delay(50);
             }
           }
         }
