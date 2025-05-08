@@ -51,10 +51,6 @@ static NimBLEAdvertisedDevice* advDevice;
 
 static bool doConnect = false;
 
-#define TRACE
-
-//#define commSerial Serial
-
 packBasicInfoStruct packBasicInfo;  //structures for BMS data
 packEepromStruct packEeprom;        //structures for BMS data
 packCellInfoStruct packCellInfo;    //structures for BMS data
